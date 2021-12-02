@@ -1,10 +1,12 @@
 import os
+import bcrypt
+from flask_bcrypt import Bcrypt
 
 from flask import Flask, render_template, request, flash, redirect, session, g
 from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
-from forms import UserAddForm, LoginForm, MessageForm
+from forms import EditUserForm, UserAddForm, LoginForm, MessageForm
 from models import db, connect_db, User, Message
 
 CURR_USER_KEY = "curr_user"
@@ -23,7 +25,7 @@ app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', "it's a secret")
 toolbar = DebugToolbarExtension(app)
 
 connect_db(app)
-
+bcrypt=Bcrypt()
 
 ##############################################################################
 # User signup/login/logout
@@ -210,8 +212,30 @@ def stop_following(follow_id):
 @app.route('/users/profile', methods=["GET", "POST"])
 def profile():
     """Update profile for current user."""
-
-    # IMPLEMENT THIS
+    
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+    form = EditUserForm(obj=g.user)
+    if form.validate_on_submit():
+        hash = bcrypt.generate_password_hash(form.password.data)
+        is_auth = g.user.authenticate(g.user.username, form.password.data)
+        if is_auth:
+            g.user.username = form.username.data
+            g.user.email = form.email.data
+            g.user.image_url = form.image_url.data
+            g.user.header_image_url = form.header_image_url.data
+            g.user.bio = form.bio.data
+            db.session.commit()
+            flash("Your user profile has been correctly udated!")
+        
+            return redirect(f"/users/{g.user.id}")
+        else:
+            flash("Incorrect password!")
+            return render_template("users/edit.html", form=form)
+        
+    else:
+        return render_template("users/edit.html", form=form)
 
 
 @app.route('/users/delete', methods=["POST"])
