@@ -313,15 +313,23 @@ def homepage():
 
     - anon users: no messages
     - logged in: 100 most recent messages of followed_users
+    The homepage for logged-in-users should show the last 100 warbles only from the users 
+    that the logged-in user is following, and that user, rather than warbles from all users.
     """
 
     if g.user:
-        messages = (Message
-                    .query
-                    .order_by(Message.timestamp.desc())
-                    .limit(100)
-                    .all())
-
+        following = g.user.following
+        followers = g.user.followers
+        list = []
+        # A for loop within a for loop is very inefficient at large scales. What other alternatives are there?
+        for follower in followers:
+            for msg in follower.messages:
+                list.append(msg.id)
+        for follows in following:
+            for msg in follows.messages:
+                list.append(msg.id)
+        messages = Message.query.filter(Message.id.in_(list)).order_by(Message.timestamp.desc()).limit(100).all()
+        
         return render_template('home.html', messages=messages)
 
     else:
