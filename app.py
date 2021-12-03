@@ -7,7 +7,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from sqlalchemy.exc import IntegrityError
 
 from forms import EditUserForm, UserAddForm, LoginForm, MessageForm
-from models import db, connect_db, User, Message
+from models import db, connect_db, User, Message, Likes
 
 CURR_USER_KEY = "curr_user"
 
@@ -320,17 +320,23 @@ def homepage():
     if g.user:
         following = g.user.following
         followers = g.user.followers
-        list = []
+        home_messages = []
         # A for loop within a for loop is very inefficient at large scales. What other alternatives are there?
         for follower in followers:
             for msg in follower.messages:
-                list.append(msg.id)
+                home_messages.append(msg.id)
         for follows in following:
             for msg in follows.messages:
-                list.append(msg.id)
-        messages = Message.query.filter(Message.id.in_(list)).order_by(Message.timestamp.desc()).limit(100).all()
-        
-        return render_template('home.html', messages=messages)
+                home_messages.append(msg.id)
+        messages = Message.query.filter(Message.id.in_(home_messages)).order_by(Message.timestamp.desc()).limit(100).all()
+
+        liked_messages = User.query.get_or_404(g.user.id).likes 
+        liked_msgs_id = []
+        for msg in liked_messages:
+            liked_msgs_id.append(msg.id)
+        print(liked_msgs_id)
+
+        return render_template('home.html', messages=messages, liked_msgs_id=liked_msgs_id)
 
     else:
         return render_template('home-anon.html')
@@ -352,3 +358,14 @@ def add_header(req):
     req.headers["Expires"] = "0"
     req.headers['Cache-Control'] = 'public, max-age=0'
     return req
+
+###############################################################################
+#Likes
+@app.route("/users/add_like/<int:message_id>", methods=['POST'])
+def add_like(message_id):
+    """Add like to a message"""
+    msg = Message.query.get_or_404(message_id)
+    like = Likes(user_id=g.user.id, message_id = message_id )
+    db.session.add(like)
+    db.session.commit()
+    return redirect("/")
