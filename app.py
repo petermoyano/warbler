@@ -152,7 +152,8 @@ def users_show(user_id):
                 .order_by(Message.timestamp.desc())
                 .limit(100)
                 .all())
-    return render_template('users/show.html', user=user, messages=messages)
+    likes = Likes.query.filter(Likes.user_id == user.id).all()
+    return render_template('users/show.html', user=user, messages=messages, likes=likes)
 
 
 @app.route('/users/<int:user_id>/following')
@@ -328,13 +329,13 @@ def homepage():
         for follows in following:
             for msg in follows.messages:
                 home_messages.append(msg.id)
+        #messages is a list of all instantiations of Message related to the user
         messages = Message.query.filter(Message.id.in_(home_messages)).order_by(Message.timestamp.desc()).limit(100).all()
-
+        
         liked_messages = User.query.get_or_404(g.user.id).likes 
         liked_msgs_id = []
         for msg in liked_messages:
             liked_msgs_id.append(msg.id)
-        print(liked_msgs_id)
 
         return render_template('home.html', messages=messages, liked_msgs_id=liked_msgs_id)
 
@@ -382,3 +383,14 @@ def remove_like(message_id):
     db.session.commit()
 
     return redirect("/")
+
+@app.route("/users/<int:user_id>/likes")
+def show_likes(user_id):
+    """Show all warbles liked by the user"""
+    user = User.query.get_or_404(user_id)
+
+    # snagging messages in order from the database;
+    # user.messages won't be in order by default
+    liked_messages_id = [like.message_id for like in Likes.query.filter(Likes.user_id== user.id).all()]
+    liked_messages = Message.query.filter(Message.id.in_(liked_messages_id)).all()
+    return render_template('users/likes.html', user=user, liked_messages=liked_messages, liked_messages_id=liked_messages_id)
