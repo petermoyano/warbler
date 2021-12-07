@@ -258,7 +258,9 @@ nav + .container {
 #messages {
   position: relative;
 }
-
+#remove{
+  color:#62676c
+}
 #messages .message-link {
   position: absolute;
   top: 0;
@@ -513,6 +515,14 @@ p.card-bio {
   top: 4px;
   right: 4px;
   z-index: 1;
+}
+
+#remove-like-form {
+  position: absolute;
+  top: 4px;
+  right: 50px;
+  z-index: 1;
+  font-size: 0.5rem !important;
 }
 
 .single-message {

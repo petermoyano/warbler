@@ -369,3 +369,16 @@ def add_like(message_id):
     db.session.add(like)
     db.session.commit()
     return redirect("/")
+
+@app.route("/users/remove_like/<int:message_id>", methods=['POST'])
+def remove_like(message_id):
+    """Remove a like"""
+    if not g.user:
+        flash("Access unauthorized.", "danger")
+        return redirect("/")
+
+    l = Likes.query.filter(Likes.user_id == g.user.id, Likes.message_id == message_id).one() 
+    db.session.delete(l)
+    db.session.commit()
+
+    return redirect("/")
