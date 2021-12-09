@@ -278,23 +278,26 @@ def messages_add():
 
         return redirect(f"/users/{g.user.id}")
 
+    print("mark!")
     return render_template('messages/new.html', form=form)
 
 
 @app.route('/messages/<int:message_id>', methods=["GET"])
 def messages_show(message_id):
     """Show a message."""
-
-    msg = Message.query.get(message_id)
+    msg = Message.query.get_or_404(message_id)
     return render_template('messages/show.html', message=msg)
 
 
-@app.route('/messages/<int:message_id>/delete', methods=["POST"])
+@app.route('/messages/<int:message_id>/delete', methods=["GET", "POST"])
 def messages_destroy(message_id):
     """Delete a message."""
+    
+    msg_to_delete = Message.query.get_or_404(message_id)
 
-    if not g.user:
-        flash("Access unauthorized.", "danger")
+    if g.user.id != msg_to_delete.user_id:
+        print("GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG")
+        flash("Access unauthorized", "danger")
         return redirect("/")
 
     msg = Message.query.get(message_id)
